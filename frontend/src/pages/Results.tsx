@@ -29,15 +29,15 @@ export default function Results() {
 
     let active = true; // Flag para cancelar se o efeito for limpo (React StrictMode)
 
-    const ws = new WebSocket('ws://localhost:8000/ws/analyze');
+    const ws = new WebSocket(`ws://localhost:8000/ws/analyze?token=${localStorage.getItem('token') || ''}`);
     wsRef.current = ws;
     
     ws.onopen = () => {
       if (!active) {
-        ws.close(); // Efeito foi limpo antes de conectar (StrictMode), fecha e ignora
+        ws.close();
         return;
       }
-      ws.send(JSON.stringify({ filename, user_id: 1 }));
+      ws.send(JSON.stringify({ filename })); // user_id agora vem do JWT no backend
     };
 
     ws.onmessage = (event) => {

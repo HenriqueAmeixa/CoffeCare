@@ -11,7 +11,7 @@ export default function History() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/history', {
+        const response = await axios.get('http://localhost:8000/history/', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setConsultations(response.data);

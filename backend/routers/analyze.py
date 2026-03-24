@@ -1,9 +1,10 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.orm import Session
 import os
 import json
 import models
 from database import get_db
+import auth as auth_utils
 
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,13 +13,29 @@ from services import ai_service
 router = APIRouter(tags=["Analysis"])
 
 @router.websocket("/ws/analyze")
-async def websocket_analyze(websocket: WebSocket, db: Session = Depends(get_db)):
+async def websocket_analyze(
+    websocket: WebSocket,
+    token: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
     await websocket.accept()
     try:
+        # Decodificar user_id a partir do JWT enviado como query param ?token=...
+        user_id = None
+        if token:
+            try:
+                payload = auth_utils.jwt.decode(token, auth_utils.SECRET_KEY, algorithms=[auth_utils.ALGORITHM])
+                email = payload.get("sub")
+                if email:
+                    user = db.query(models.User).filter(models.User.email == email).first()
+                    if user:
+                        user_id = user.id
+            except Exception:
+                pass  # Token inválido, salva como user_id=None
+
         data_str = await websocket.receive_text()
         data = json.loads(data_str)
         filename = data.get("filename")
-        user_id = data.get("user_id") # Por token na query string seria mais seguro
         
         file_path = os.path.join("uploads", filename)
         if not os.path.exists(file_path):

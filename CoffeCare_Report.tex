@@ -1,0 +1,185 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\geometry{margin=2.5cm}
+
+\title{Relatório Técnico: CoffeCare\\ \large Sistema Inteligente de Diagnóstico de Doenças em Folhas de Café}
+\author{Henrique}
+\date{Março de 2026}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Descrição do Dataset e Justificativa}
+
+\subsection{Dataset Escolhido}
+O dataset utilizado neste projeto é o \textbf{Coffee Leaf Diseases}, obtido via Kaggle (\url{https://www.kaggle.com/datasets/badasstechie/coffee-leaf-diseases}). Ele é composto por um total de 1.264 imagens de folhas de cafeeiro em formato JPEG, anotadas criteriosamente para identificar três das doenças mais comuns e uma classe para folhas saudáveis.
+
+\subsection{Classes Identificadas}
+\begin{table}[h!]
+\centering
+\begin{tabular}{@{}llc@{}}
+\toprule
+\textbf{Classe} & \textbf{Descrição} & \textbf{Qtd. Imagens} \\ \midrule
+Bicho-mineiro & Infestação pela larva \textit{Leucoptera coffeella} & $\sim$330 \\
+Ferrugem & Fungo \textit{Hemileia vastatrix} & $\sim$225 \\
+Phoma & Fungo \textit{Phoma costarricensis} & $\sim$360 \\
+Saudável & Folha sem sinais de patógenos & $\sim$349 \\ \bottomrule
+\end{tabular}
+\caption{Distribuição das classes no dataset.}
+\end{table}
+
+\subsection{Justificativa}
+A cafeicultura é um dos pilares do agronegócio brasileiro, sendo o Brasil o maior produtor mundial. Doenças como a Ferrugem e o Bicho-mineiro podem devastar até 35\% da safra se não forem tratadas a tempo. 
+
+A escolha deste dataset justifica-se pela relevância econômica das doenças catalogadas e pela qualidade das anotações, que permitem o treinamento de modelos robustos. Além disso, a disponibilidade pública facilita a reprodutibilidade acadêmica e o desenvolvimento de soluções acessíveis ao pequeno e médio produtor.
+
+\newpage
+
+\section{Processo de Treinamento}
+
+O treinamento foi realizado utilizando a arquitetura \textbf{EfficientNet-B0} através da biblioteca PyTorch, aplicando a técnica de \textit{Transfer Learning}. 
+
+\subsection{Metodologia de Treino}
+\begin{itemize}
+    \item \textbf{Divisão dos Dados:} Utilizou-se o Princípio de Pareto, separando 80\% das imagens para treinamento (1.011 imagens) e 20\% para validação/teste (253 imagens).
+    \item \textbf{Pré-processamento:} As imagens foram redimensionadas para 256px e cortadas centralmente para 224px. Aplicou-se \textit{RandomHorizontalFlip} durante o treino para aumentar a variabilidade.
+    \item \textbf{Otimização:} Utilizou-se o otimizador \textit{Adam} (lr=0.001) e a função de perda \textit{CrossEntropyLoss}.
+\end{itemize}
+
+\subsection{Registro do Processo}
+Para atender aos requisitos da entrega, abaixo encontram-se os espaços reservados para as capturas de tela do processo (caso tenha sido utilizado o Teachable Machine para prototipação ou o próprio terminal de treinamento).
+
+\begin{figure}[h!]
+    \centering
+    \color{gray}
+    \framebox(300,200){Placeholder: Print do Processo de Treinamento}
+    \caption{Captura de tela demonstrando as épocas de treinamento e evolução da acurácia.}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \color{gray}
+    \framebox(300,200){Placeholder: Print da Matriz de Confusão Original}
+    \caption{Visualização gráfica dos resultados durante a fase de treinamento.}
+\end{figure}
+
+\newpage
+
+\section{Descrição da Implementação Web}
+
+A plataforma \textbf{CoffeCare} foi implementada seguindo uma arquitetura robusta de micro-serviços integrados.
+
+\subsection{Frontend (React + TypeScript)}
+\begin{itemize}
+    \item \textbf{Interface:} Desenvolvida com React 19 e TailwindCSS, focada em dispositivos móveis.
+    \item \textbf{Resultados em Tempo Real:} Utiliza \textbf{WebSockets} para receber o diagnóstico do servidor assim que a imagem é processada.
+    \item \textbf{Funcionalidade de Exportação:} Permite ao usuário gerar um laudo em PDF localmente através das bibliotecas \textit{jsPDF} e \textit{html2canvas}.
+\end{itemize}
+
+\subsection{Backend (FastAPI)}
+\begin{itemize}
+    \item \textbf{Motor de IA:} Carrega o modelo PyTorch treinado na inicialização para garantir respostas instantâneas via WebSocket.
+    \item \textbf{Integração LLM:} O sistema integra-se com o \textbf{Ollama (Llama3)} rodando localmente. Após o diagnóstico da visão computacional, o LLM gera um plano de ação agronômico detalhado em português.
+    \item \textbf{Banco de Dados:} Utiliza SQLite com SQLAlchemy para armazenar o histórico de consultas dos usuários.
+\end{itemize}
+
+\subsection{Fluxograma de Operação}
+1. O usuário captura ou carrega a foto da folha. \\
+2. O Backend recebe a imagem e inicia o processamento neuronal. \\
+3. O diagnóstico é enviado ao Frontend via WebSocket. \\
+4. O Ollama gera as recomendações de tratamento. \\
+5. O laudo final é exibido e salvo no histórico do usuário.
+
+\newpage
+
+\section{Resultados da Avaliação do Modelo}
+
+A avaliação final foi realizada sobre os 20\% de dados reservados (teste), totalizando 253 imagens que o modelo nunca havia "visto" durante o ajuste de pesos.
+
+\subsection{Métricas Globais}
+\begin{table}[h!]
+\centering
+\begin{tabular}{@{}lc@{}}
+\toprule
+\textbf{Métrica} & \textbf{Resultado} \\ \midrule
+Acurácia & \textbf{96,84\%} \\
+Precisão & \textbf{96,86\%} \\
+Recall & \textbf{96,84\%} \\
+F1-Score & \textbf{96,84\%} \\ \bottomrule
+\end{tabular}
+\caption{Desempenho consolidado do modelo EfficientNet-B0.}
+\end{table}
+
+\subsection{Matriz de Confusão}
+Abaixo, a distribuição de acertos e erros do modelo:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{l|cccc}
+\toprule
+\textbf{Real \textbackslash Predito} & \textbf{Bicho-mineiro} & \textbf{Ferrugem} & \textbf{Phoma} & \textbf{Saudável} \\ \midrule
+\textbf{Bicho-mineiro} & \textbf{62} & 3 & 0 & 1 \\
+\textbf{Ferrugem} & 1 & \textbf{43} & 0 & 1 \\
+\textbf{Phoma} & 1 & 0 & \textbf{71} & 0 \\
+\textbf{Saudável} & 1 & 0 & 0 & \textbf{69} \\ \bottomrule
+\end{tabular}
+\caption{Matriz de Confusão detalhada.}
+\end{table}
+
+\subsection{Análise por Classe}
+\begin{itemize}
+    \item \textbf{Phoma:} Apresentou a melhor performance (F1=0.99), devido às manchas escuras circulares muito características.
+    \item \textbf{Ferrugem:} O modelo demonstrou alta precisão, confundindo-se levemente apenas com o Bicho-mineiro em casos onde as pústulas alaranjadas são pequenas.
+\end{itemize}
+
+\newpage
+
+\section{Conclusões e Possíveis Melhorias}
+
+\subsection{Conclusão}
+O projeto atingiu os objetivos propostos com excelência. A acurácia superior a 96\% valida a abordagem de \textit{Transfer Learning} com modelos modernos como o EfficientNet. A integração com LLMs para a recomendação de tratamentos eleva a ferramenta de uma simples ferramenta de detecção para um assistente agronômico completo.
+
+\subsection{Melhorias Futuras}
+\begin{enumerate}
+    \item \textbf{Datasets Complementares:} Incluir mais variações de iluminação e fundos ruidosos para aumentar a robustez em campo.
+    \item \textbf{Alojamento em Nuvem:} Realizar o deploy em instâncias GPU na nuvem para acesso global via dispositivos móveis.
+    \item \textbf{Análise de Severidade:} Implementar regressão para estimar a porcentagem da área foliar afetada.
+    \item \textbf{Offline Mode:} Converter o modelo para formato ONNX ou TensorFlow Lite para execução direta no dispositivo sem necessidade de internet.
+\end{enumerate}
+
+\newpage
+
+\appendix
+\section{Instruções para Execução (README)}
+
+\begin{lstlisting}[basicstyle=\ttfamily\small, breaklines=true, frame=single, title=Resumo do README.md]
+1. Requisitos: Python 3.10, Node.js, Ollama.
+2. Backend:
+   $ cd backend
+   $ pip install -r requirements.txt
+   $ uvicorn main:app --reload
+3. Frontend:
+   $ cd frontend
+   $ npm install
+   $ npm run dev
+4. Ollama:
+   $ ollama run llama3
+\end{lstlisting}
+
+\end{document}
