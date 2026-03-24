@@ -1,0 +1,27 @@
+============================================================
+RELATÓRIO DE AVALIAÇÃO — CoffeCare EfficientNet-B0
+============================================================
+Total testado  : 253 imagens (20% do dataset)
+Acurácia       : 96.84%
+Precisão       : 96.86%
+Recall         : 96.84%
+F1-Score       : 96.84%
+
+── Matriz de Confusão ─────────────────────────────────────
+          Bicho-mi  Ferrugem     Phoma  Saudável
+Bicho-mine      62         3         0         1
+Ferrugem         1        43         0         1
+Phoma            1         0        71         0
+Saudável         1         0         0        69
+
+── Relatório por Classe ────────────────────────────────────
+               precision    recall  f1-score   support
+
+Bicho-mineiro       0.95      0.94      0.95        66
+     Ferrugem       0.93      0.96      0.95        45
+        Phoma       1.00      0.99      0.99        72
+     Saudável       0.97      0.99      0.98        70
+
+     accuracy                           0.97       253
+    macro avg       0.97      0.97      0.97       253
+ weighted avg       0.97      0.97      0.97       253
