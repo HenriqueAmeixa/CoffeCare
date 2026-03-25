@@ -1,27 +1,29 @@
 ============================================================
 RELATÓRIO DE AVALIAÇÃO — CoffeCare EfficientNet-B0
 ============================================================
-Total testado  : 253 imagens (20% do dataset)
-Acurácia       : 96.84%
-Precisão       : 96.86%
-Recall         : 96.84%
-F1-Score       : 96.84%
+Total testado  : 10296 imagens (20% do dataset)
+Acurácia       : 99.15%
+Precisão       : 99.19%
+Recall         : 99.15%
+F1-Score       : 99.16%
 
 ── Matriz de Confusão ─────────────────────────────────────
-          Bicho-mi  Ferrugem     Phoma  Saudável
-Bicho-mine      62         3         0         1
-Ferrugem         1        43         0         1
-Phoma            1         0        71         0
-Saudável         1         0         0        69
+          Bicho-mi  Cercospo  Ferrugem     Phoma  Saudável
+Bicho-mine    3392         0        15        15        21
+Cercospora       0      1521         0         0         0
+Ferrugem         2         0        39         2         8
+Phoma            8         0         5      1348         2
+Saudável         1         0         4         5      3908
 
 ── Relatório por Classe ────────────────────────────────────
                precision    recall  f1-score   support
 
-Bicho-mineiro       0.95      0.94      0.95        66
-     Ferrugem       0.93      0.96      0.95        45
-        Phoma       1.00      0.99      0.99        72
-     Saudável       0.97      0.99      0.98        70
+Bicho-mineiro       1.00      0.99      0.99      3443
+   Cercospora       1.00      1.00      1.00      1521
+     Ferrugem       0.62      0.76      0.68        51
+        Phoma       0.98      0.99      0.99      1363
+     Saudável       0.99      1.00      0.99      3918
 
-     accuracy                           0.97       253
-    macro avg       0.97      0.97      0.97       253
- weighted avg       0.97      0.97      0.97       253
+     accuracy                           0.99     10296
+    macro avg       0.92      0.95      0.93     10296
+ weighted avg       0.99      0.99      0.99     10296

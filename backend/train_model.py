@@ -36,15 +36,16 @@ DATA_DIR      = "dataset_prepared"
 MODEL_DIR     = "modelos"
 MODEL_PATH    = os.path.join(MODEL_DIR, "coffecare_efficientnet.pt")
 REPORT_PATH   = os.path.join(MODEL_DIR, "evaluation_report.txt")
-NUM_EPOCHS    = 5
+NUM_EPOCHS    = 10
 BATCH_SIZE    = 32
 TRAIN_SPLIT   = 0.80   # Princípio de Pareto: 80% treino / 20% teste
 
 CLASS_MAP = {
-    "miner":   "Bicho-mineiro",
-    "rust":    "Ferrugem",
-    "phoma":   "Phoma",
-    "healthy": "Saudável"
+    "miner":      "Bicho-mineiro",
+    "rust":       "Ferrugem",
+    "phoma":      "Phoma",
+    "cercospora": "Cercospora",
+    "healthy":    "Saudável"
 }
 
 # ── Preparação do Dataset ──────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ def prepare_dataset(raw_path, csv_filename, split_name):
             continue
 
         cls = "Saudável"
-        for col in ["miner", "rust", "phoma"]:
+        for col in ["miner", "rust", "phoma", "cercospora"]:
             if row.get(col, "0").strip() == "1":
                 cls = CLASS_MAP[col]; break
 
@@ -128,6 +129,7 @@ def run_training_and_evaluation(train_dir):
     print(f"  80% treino     : {train_size}")
     print(f"  20% teste      : {test_size}")
 
+    # No Windows, precesira usar num_workers=0 para evitar freeze/crash silencioso
     train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True,  num_workers=0)
     test_loader  = DataLoader(test_set,  batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
@@ -234,6 +236,10 @@ def run_training_and_evaluation(train_dir):
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
+    # Necessário para evitar crashes do DataLoader no Windows com num_workers > 0
+    # mesmo que num_workers=0 tenha sido configurado, algumas bibliotecas
+    # podem iniciar processos filhos na importação.
+    
     print("Baixando dataset via kagglehub (pode usar cache local)...")
     raw_path = kagglehub.dataset_download(DATASET_URL)
     print(f"Dataset disponível em: {raw_path}\n")
