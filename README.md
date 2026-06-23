@@ -8,7 +8,7 @@
 
 O **CoffeCare** é uma aplicação web full-stack que permite ao produtor de café fotografar uma folha da sua plantação e obter automaticamente:
 
-- ✅ **Diagnóstico visual** da doença (Ferrugem, Bicho-mineiro, Phoma ou Saudável)
+- ✅ **Diagnóstico visual** da doença (Ferrugem, Bicho-mineiro, Cercospora, Phoma ou folha Saudável)
 - ✅ **Grau de confiança** da análise (ex: 96%)
 - ✅ **Plano de tratamento personalizado** gerado por IA (LLM local via Ollama)
 - ✅ **Histórico de consultas** por usuário
@@ -18,23 +18,41 @@ O **CoffeCare** é uma aplicação web full-stack que permite ao produtor de caf
 
 ## 🧠 Resultado da Avaliação do Modelo
 
-O modelo EfficientNet-B0 foi treinado e avaliado com divisão **80% treino / 20% teste** (Princípio de Pareto):
+O modelo EfficientNet-B0 foi treinado e avaliado em **5 classes** com **20% das imagens reservadas para teste** (10.296 imagens nunca vistas):
 
-| Métrica     | Resultado |
-|-------------|-----------|
-| Acurácia    | **96.84%** |
-| Precisão    | **96.86%** |
-| Recall      | **96.84%** |
-| F1-Score    | **96.84%** |
+| Métrica     | Weighted | Macro |
+|-------------|:---:|:---:|
+| Acurácia    | **99.15%** | — |
+| Precisão    | **99.19%** | 92% |
+| Recall      | **99.15%** | 95% |
+| F1-Score    | **99.16%** | 93% |
+
+> ⚠️ **Leia a coluna Macro.** A média *weighted* (99%) é dominada pelas classes
+> com muitas imagens. A média *macro* trata todas as classes igualmente e revela
+> o ponto fraco: a **Ferrugem** ainda tem F1 de apenas **0.68** (precisão 0.62,
+> recall 0.76) por ter pouquíssimas imagens. É exatamente isso que o novo
+> agregador de dataset (`download_datasets.py`) e a loss ponderada por classe
+> buscam corrigir — reavalie pelo Macro após reconsolidar o dataset e retreinar.
+
+**Desempenho por classe (conjunto de teste):**
+
+| Classe        | Precisão | Recall | F1 | Suporte |
+|---------------|:---:|:---:|:---:|:---:|
+| Bicho-mineiro | 1.00 | 0.99 | 0.99 | 3443 |
+| Cercospora    | 1.00 | 1.00 | 1.00 | 1521 |
+| **Ferrugem**  | **0.62** | **0.76** | **0.68** | **51** |
+| Phoma         | 0.98 | 0.99 | 0.99 | 1363 |
+| Saudável      | 0.99 | 1.00 | 0.99 | 3918 |
 
 **Matriz de Confusão:**
 
-|               | Bicho-mineiro | Ferrugem | Phoma | Saudável |
-|---------------|:---:|:---:|:---:|:---:|
-| Bicho-mineiro | **62** | 3 | 0 | 1 |
-| Ferrugem      | 1 | **43** | 0 | 1 |
-| Phoma         | 1 | 0 | **71** | 0 |
-| Saudável      | 1 | 0 | 0 | **69** |
+|               | Bicho-mineiro | Cercospora | Ferrugem | Phoma | Saudável |
+|---------------|:---:|:---:|:---:|:---:|:---:|
+| Bicho-mineiro | **3392** | 0 | 15 | 15 | 21 |
+| Cercospora    | 0 | **1521** | 0 | 0 | 0 |
+| Ferrugem      | 2 | 0 | **39** | 2 | 8 |
+| Phoma         | 8 | 0 | 5 | **1348** | 2 |
+| Saudável      | 1 | 0 | 4 | 5 | **3908** |
 
 ---
 
@@ -106,22 +124,63 @@ O app estará disponível em `http://localhost:5173`
 
 ## 🤖 Treinar o Modelo de IA (Opcional)
 
-O repositório inclui um script para treinar o modelo do zero com download automático do dataset:
+### Passo 0 — Credenciais do Kaggle (pré-requisito)
+
+Os datasets são baixados do Kaggle, então é preciso uma chave de API (gratuita):
+
+1. Crie/entre em uma conta em [kaggle.com](https://www.kaggle.com/).
+2. Vá em **Account → Settings → API → Create New Token**. Isso baixa um arquivo `kaggle.json`.
+3. Coloque o arquivo em:
+   - **Windows**: `C:\Users\<SEU_USUARIO>\.kaggle\kaggle.json`
+   - **Linux/Mac**: `~/.kaggle/kaggle.json`
+
+> Sem isso, o download falha com erro de autenticação. O `kaggle.json` já está
+> no `.gitignore` — **nunca versione essa chave**.
+
+### Passo 1 — Consolidar o dataset (recomendado)
+
+`download_datasets.py` agrega **vários** datasets públicos do Kaggle numa única
+pasta `dataset_prepared/train/<Classe>`, priorizando fontes ricas em **Ferrugem**
+(a classe mais difícil) e **removendo imagens repetidas por conteúdo** (perceptual
+hash — não apenas por nome de arquivo):
 
 ```bash
 cd backend
 venv\Scripts\activate
+python download_datasets.py
+```
+
+Garantias do agregador:
+- **Sem repetições**: cada imagem entra uma única vez, mesmo que apareça em mais
+  de um dataset, em formato diferente ou recomprimida (dedup por `dhash`).
+- **Sempre classificada**: só copia imagens de pastas cujo nome mapeia para uma
+  classe conhecida (`rust`/`ferrugem`/`roya` → Ferrugem, etc.).
+- **Balanceamento**: teto de `MAX_PER_CLASS = 3000` por classe (configurável no
+  topo do script) reduz o desbalanceamento e mantém o treino viável na CPU.
+- Pula imagens corrompidas e reporta quantas foram duplicadas/ignoradas.
+
+### Passo 2 — Treinar e avaliar
+
+```bash
 python train_model.py
 ```
 
-O script irá automaticamente:
-1. Instalar dependências necessárias (`kagglehub`, `torch`, `torchvision`, `scikit-learn`)
-2. Baixar o dataset `badasstechie/coffee-leaf-diseases` via KaggleHub
-3. Organizar as imagens por classe usando os CSVs de anotação
-4. Treinar por 5 épocas com divisão 80/20 (Princípio de Pareto)
-5. Avaliar o modelo e exibir as métricas completas
-6. Salvar o modelo em `modelos/coffecare_efficientnet.pt`
-7. Salvar o relatório em `modelos/evaluation_report.txt`
+O script:
+1. Instala dependências necessárias (`kagglehub`, `torch`, `torchvision`, `scikit-learn`)
+2. Usa o `dataset_prepared/train` consolidado (ou, em fallback, baixa o `badasstechie/coffee-leaf-diseases`)
+3. Faz **divisão estratificada 72% treino / 8% validação / 20% teste** — garante que classes raras apareçam em todos os conjuntos
+4. Treina o EfficientNet-B0 com **loss ponderada por classe**, augmentation forte, **scheduler** e **early stopping** pelo F1-macro
+5. Avalia no teste e exibe métricas **weighted E macro** (a macro revela o desempenho real na classe minoritária)
+6. Salva o melhor modelo em `modelos/coffecare_efficientnet.pt`
+7. Salva o relatório em `modelos/evaluation_report.txt`
+
+> 💻 **CPU vs GPU** — o `train_model.py` detecta o hardware automaticamente:
+> - **Com GPU (CUDA)**: faz **fine-tuning completo** (backbone + cabeçalho, LR discriminativo) → maior acurácia.
+> - **Só CPU**: treina **apenas o cabeçalho** (backbone congelado) para terminar em tempo razoável.
+>
+> Para forçar um modo, edite `FINE_TUNE_BACKBONE` no topo do `train_model.py`
+> (`True` = completo, `False` = só cabeçalho). Em CPU, mantenha o `MAX_PER_CLASS`
+> baixo no `download_datasets.py` para o treino não demorar horas.
 
 ---
 
